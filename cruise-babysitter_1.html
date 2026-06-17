@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Baby on Board 🚢</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root {
+    --navy: #0d2b45;
+    --deep: #081c2e;
+    --ocean: #1a6b8a;
+    --foam: #e8f4f8;
+    --gold: #d4a843;
+    --coral: #e06c5a;
+    --sand: #f5efe6;
+    --white: #ffffff;
+    --text: #0d2b45;
+    --muted: #6b8da6;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--deep);
+    min-height: 100vh;
+    color: var(--white);
+    overflow-x: hidden;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background:
+      radial-gradient(ellipse at 20% 50%, rgba(26,107,138,0.3) 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 20%, rgba(13,43,69,0.8) 0%, transparent 50%),
+      linear-gradient(180deg, #081c2e 0%, #0d2b45 40%, #0a3a52 100%);
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    height: 200px;
+    background: repeating-linear-gradient(0deg, transparent, transparent 28px, rgba(26,107,138,0.08) 28px, rgba(26,107,138,0.08) 30px);
+    z-index: 0;
+    pointer-events: none;
+  }
+  .container {
+    position: relative;
+    z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+  }
+  header { text-align: center; padding: 2.5rem 0 2rem; }
+  .ship-emoji {
+    font-size: 3rem; display: block; margin-bottom: 0.5rem;
+    animation: bob 3s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-8px); }
+  }
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2.2rem, 6vw, 3.2rem);
+    font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; color: var(--white);
+  }
+  h1 em { font-style: italic; color: var(--gold); }
+  .subtitle {
+    margin-top: 0.6rem; color: var(--muted); font-size: 0.95rem;
+    font-weight: 300; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+  .divider {
+    display: flex; align-items: center; gap: 1rem; margin: 2rem 0; opacity: 0.3;
+  }
+  .divider::before, .divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--ocean);
+  }
+  .divider span { font-size: 0.7rem; letter-spacing: 0.2em; color: var(--ocean); }
+  .form-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px; padding: 1.75rem; margin-bottom: 2.5rem;
+    backdrop-filter: blur(8px);
+  }
+  .form-card h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem; margin-bottom: 1.25rem; color: var(--gold);
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem; }
+  @media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+  .form-group { display: flex; flex-direction: column; gap: 0.35rem; }
+  .form-group.full { grid-column: 1 / -1; }
+  label {
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.1em;
+    text-transform: uppercase; color: var(--muted);
+  }
+  input, textarea, select {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 8px; padding: 0.65rem 0.9rem;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem;
+    color: var(--white); width: 100%;
+    transition: border-color 0.2s, background 0.2s; outline: none;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--ocean); background: rgba(255,255,255,0.1);
+  }
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="time"]::-webkit-calendar-picker-indicator { filter: invert(0.7); cursor: pointer; }
+  textarea { resize: vertical; min-height: 70px; }
+  select option { background: var(--navy); color: var(--white); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    padding: 0.7rem 1.5rem; border-radius: 8px;
+    font-family: 'DM Sans', sans-serif; font-size: 0.9rem; font-weight: 500;
+    cursor: pointer; border: none; transition: all 0.2s;
+  }
+  .btn-primary { background: var(--gold); color: var(--deep); }
+  .btn-primary:hover { background: #e8ba55; transform: translateY(-1px); }
+  .btn-secondary {
+    background: rgba(255,255,255,0.1); color: var(--white);
+    border: 1px solid rgba(255,255,255,0.15);
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.18); }
+  .btn-danger {
+    background: rgba(224,108,90,0.15); color: var(--coral);
+    border: 1px solid rgba(224,108,90,0.3); font-size: 0.78rem; padding: 0.35rem 0.7rem;
+  }
+  .btn-danger:hover { background: rgba(224,108,90,0.25); }
+  .form-actions { margin-top: 1.25rem; display: flex; justify-content: flex-end; }
+  .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 0.4rem 1rem; border-radius: 20px; font-size: 0.8rem; font-weight: 500;
+    cursor: pointer; border: 1px solid rgba(255,255,255,0.15);
+    background: transparent; color: var(--muted); transition: all 0.2s;
+  }
+  .filter-btn.active, .filter-btn:hover {
+    background: var(--ocean); border-color: var(--ocean); color: var(--white);
+  }
+  .shifts-list { display: flex; flex-direction: column; gap: 1rem; }
+  .shift-card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 14px; overflow: hidden;
+    transition: transform 0.2s, border-color 0.2s;
+    animation: fadeUp 0.3s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .shift-card:hover { transform: translateY(-2px); border-color: rgba(26,107,138,0.4); }
+  .shift-card.covered { border-color: rgba(26,107,138,0.5); }
+  .shift-header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: 1.1rem 1.25rem 0.75rem; gap: 1rem;
+  }
+  .shift-date-block {
+    display: flex; flex-direction: column; align-items: center;
+    background: var(--ocean); border-radius: 10px; padding: 0.5rem 0.75rem;
+    min-width: 58px; text-align: center; flex-shrink: 0;
+  }
+  .shift-date-block .month { font-size: 0.6rem; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; opacity: 0.85; }
+  .shift-date-block .day { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; line-height: 1; }
+  .shift-date-block .dow { font-size: 0.6rem; opacity: 0.8; margin-top: 1px; }
+  .shift-meta { flex: 1; }
+  .shift-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 0.3rem; line-height: 1.3; }
+  .shift-details { display: flex; flex-wrap: wrap; gap: 0.5rem 1rem; font-size: 0.8rem; color: var(--muted); }
+  .shift-details span { display: flex; align-items: center; gap: 0.3rem; }
+  .status-badge {
+    display: inline-flex; align-items: center; gap: 0.3rem;
+    padding: 0.25rem 0.7rem; border-radius: 20px; font-size: 0.72rem; font-weight: 500; flex-shrink: 0;
+  }
+  .status-open { background: rgba(212,168,67,0.15); color: var(--gold); border: 1px solid rgba(212,168,67,0.3); }
+  .status-covered { background: rgba(26,107,138,0.2); color: #6dc8e0; border: 1px solid rgba(26,107,138,0.4); }
+  .shift-body {
+    padding: 0.85rem 1.25rem 1.1rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .sitters-row {
+    display: flex; align-items: center; flex-wrap: wrap;
+    gap: 0.5rem; margin-bottom: 0.75rem;
+  }
+  .sitters-label {
+    font-size: 0.72rem; font-weight: 500; letter-spacing: 0.08em;
+    text-transform: uppercase; color: var(--muted); margin-right: 0.25rem;
+  }
+  .sitter-chip {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    background: rgba(26,107,138,0.25); border: 1px solid rgba(26,107,138,0.4);
+    border-radius: 20px; padding: 0.2rem 0.6rem 0.2rem 0.5rem; font-size: 0.8rem;
+  }
+  .sitter-chip button {
+    background: none; border: none; cursor: pointer; color: var(--muted);
+    font-size: 0.9rem; line-height: 1; padding: 0; transition: color 0.15s;
+  }
+  .sitter-chip button:hover { color: var(--coral); }
+  .no-sitters { font-size: 0.82rem; color: var(--muted); font-style: italic; }
+  .signup-row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+  .signup-row input { flex: 1; min-width: 140px; padding: 0.5rem 0.8rem; font-size: 0.85rem; }
+  .card-footer { display: flex; justify-content: flex-end; padding: 0 1.25rem 1rem; gap: 0.5rem; }
+  .empty { text-align: center; padding: 3rem 1rem; color: var(--muted); }
+  .empty .big { font-size: 2.5rem; margin-bottom: 0.5rem; }
+  .empty p { font-size: 0.9rem; }
+  .stats-bar { display: flex; gap: 1rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .stat {
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 10px; padding: 0.7rem 1rem; flex: 1; min-width: 100px; text-align: center;
+  }
+  .stat .num { font-family: 'Playfair Display', serif; font-size: 1.6rem; font-weight: 700; color: var(--gold); display: block; }
+  .stat .lbl { font-size: 0.7rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.08em; }
+  .note {
+    background: rgba(212,168,67,0.08); border: 1px solid rgba(212,168,67,0.2);
+    border-radius: 8px; padding: 0.6rem 0.9rem; font-size: 0.78rem;
+    color: rgba(212,168,67,0.9); margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(8,28,46,0.85); z-index: 100;
+    align-items: center; justify-content: center;
+    padding: 1rem; backdrop-filter: blur(4px);
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #0d2b45; border: 1px solid rgba(255,255,255,0.12);
+    border-radius: 16px; padding: 1.75rem; width: 100%; max-width: 480px;
+    animation: fadeUp 0.25s ease;
+  }
+  .modal h3 { font-family: 'Playfair Display', serif; font-size: 1.2rem; margin-bottom: 1.2rem; color: var(--gold); }
+  .modal .form-grid { grid-template-columns: 1fr; }
+  .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; margin-top: 1.25rem; }
+
+  /* Sync indicator */
+  .sync-dot {
+    display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+    background: var(--gold); margin-right: 0.4rem;
+    animation: pulse 2s ease-in-out infinite;
+  }
+  .sync-dot.live { background: #4caf82; }
+  .sync-dot.error { background: var(--coral); animation: none; }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; } 50% { opacity: 0.3; }
+  }
+  .sync-bar {
+    display: flex; align-items: center; justify-content: flex-end;
+    font-size: 0.72rem; color: var(--muted); margin-bottom: 1rem; gap: 0.25rem;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <span class="ship-emoji">🚢</span>
+    <h1>Baby on <em>Board</em></h1>
+    <p class="subtitle">Cruise Babysitter Coordinator · September 2025</p>
+  </header>
+
+  <div class="divider"><span>⚓</span></div>
+
+  <div class="sync-bar">
+    <span class="sync-dot" id="syncDot"></span>
+    <span id="syncLabel">Connecting…</span>
+  </div>
+
+  <div class="note">
+    💡 Anyone can add a shift or sign up to watch the baby — changes sync live for everyone!
+  </div>
+
+  <div class="stats-bar" id="statsBar"></div>
+
+  <div class="form-card">
+    <h2>➕ Add a Babysitting Shift</h2>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="newDate">
+      </div>
+      <div class="form-group">
+        <label>Time Away</label>
+        <input type="text" id="newTime" placeholder="e.g. 7:00 PM – 10:00 PM">
+      </div>
+      <div class="form-group full">
+        <label>Description / Activity</label>
+        <input type="text" id="newDesc" placeholder="e.g. Dinner at the specialty steakhouse">
+      </div>
+      <div class="form-group full">
+        <label>Location / Ship Details</label>
+        <input type="text" id="newLocation" placeholder="e.g. Deck 5, Toscana Restaurant">
+      </div>
+      <div class="form-group full">
+        <label>Notes for the sitter (optional)</label>
+        <textarea id="newNotes" placeholder="e.g. She'll need to be in bed by 8:30, bottle in the bag..."></textarea>
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-primary" onclick="addShift()">🌊 Add Shift</button>
+    </div>
+  </div>
+
+  <div class="filter-bar">
+    <button class="filter-btn active" onclick="setFilter('all', this)">All Shifts</button>
+    <button class="filter-btn" onclick="setFilter('open', this)">Needs Sitter</button>
+    <button class="filter-btn" onclick="setFilter('covered', this)">Covered ✓</button>
+  </div>
+
+  <div class="shifts-list" id="shiftsList"></div>
+  <div class="empty" id="emptyState" style="display:none;">
+    <div class="big">⚓</div>
+    <p>No shifts yet — add your first one above!</p>
+  </div>
+
+</div>
+
+<!-- Edit modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <h3>✏️ Edit Shift</h3>
+    <input type="hidden" id="editId">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="editDate">
+      </div>
+      <div class="form-group">
+        <label>Time Away</label>
+        <input type="text" id="editTime">
+      </div>
+      <div class="form-group full">
+        <label>Description</label>
+        <input type="text" id="editDesc">
+      </div>
+      <div class="form-group full">
+        <label>Location / Ship Details</label>
+        <input type="text" id="editLocation">
+      </div>
+      <div class="form-group full">
+        <label>Notes</label>
+        <textarea id="editNotes"></textarea>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveEdit()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://fomzvtkjmgpwvvmhvwqt.supabase.co';
+  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZvbXp2dGtqbWdwd3Z2bWh2d3F0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2NzI4ODUsImV4cCI6MjA5NzI0ODg4NX0.L02wZOau51gT10_CLNfmy4l9nfJwiwFpY6mMqEF5NhA';
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let shifts = [];
+  let currentFilter = 'all';
+
+  // ── Sync indicator ───────────────────────────────────
+  function setSyncStatus(status) {
+    const dot = document.getElementById('syncDot');
+    const label = document.getElementById('syncLabel');
+    dot.className = 'sync-dot';
+    if (status === 'live') {
+      dot.classList.add('live');
+      label.textContent = 'Live — syncing across all devices';
+    } else if (status === 'error') {
+      dot.classList.add('error');
+      label.textContent = 'Connection error';
+    } else {
+      label.textContent = 'Connecting…';
+    }
+  }
+
+  // ── Load & realtime ──────────────────────────────────
+  async function loadShifts() {
+    const { data, error } = await db.from('shifts').select('*').order('date', { ascending: true });
+    if (error) { setSyncStatus('error'); console.error(error); return; }
+    shifts = data || [];
+    setSyncStatus('live');
+    render();
+  }
+
+  // Subscribe to real-time changes
+  db.channel('shifts-channel')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'shifts' }, () => {
+      loadShifts();
+    })
+    .subscribe((status) => {
+      if (status === 'SUBSCRIBED') setSyncStatus('live');
+    });
+
+  // ── Helpers ──────────────────────────────────────────
+  function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return { month: '?', day: '?', dow: '???' };
+    const d = new Date(dateStr + 'T12:00:00');
+    return {
+      month: d.toLocaleString('en-US', { month: 'short' }).toUpperCase(),
+      day: d.getDate(),
+      dow: d.toLocaleString('en-US', { weekday: 'short' }).toUpperCase()
+    };
+  }
+
+  function escHtml(s) {
+    return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ── Render ───────────────────────────────────────────
+  function render() {
+    const list = document.getElementById('shiftsList');
+    const empty = document.getElementById('emptyState');
+
+    const filtered = shifts.filter(s => {
+      if (currentFilter === 'open') return !s.sitters || s.sitters.length === 0;
+      if (currentFilter === 'covered') return s.sitters && s.sitters.length > 0;
+      return true;
+    });
+
+    // Stats
+    const total = shifts.length;
+    const covered = shifts.filter(s => s.sitters && s.sitters.length > 0).length;
+    const open = total - covered;
+    document.getElementById('statsBar').innerHTML = `
+      <div class="stat"><span class="num">${total}</span><span class="lbl">Total Shifts</span></div>
+      <div class="stat"><span class="num">${covered}</span><span class="lbl">Covered ✓</span></div>
+      <div class="stat"><span class="num" style="color:var(--coral)">${open}</span><span class="lbl">Need a Sitter</span></div>
+    `;
+
+    if (filtered.length === 0) {
+      list.innerHTML = shifts.length === 0 ? '' : '<div class="empty"><div class="big">🎉</div><p>No shifts in this category!</p></div>';
+      empty.style.display = shifts.length === 0 ? 'block' : 'none';
+      return;
+    }
+    empty.style.display = 'none';
+
+    list.innerHTML = filtered.map(s => {
+      const { month, day, dow } = formatDate(s.date);
+      const sitters = s.sitters || [];
+      const isCovered = sitters.length > 0;
+      const chips = sitters.map((name, i) => `
+        <span class="sitter-chip">
+          👤 ${escHtml(name)}
+          <button onclick="removeSitter('${s.id}', ${i})" title="Remove">×</button>
+        </span>
+      `).join('');
+
+      return `
+        <div class="shift-card ${isCovered ? 'covered' : ''}">
+          <div class="shift-header">
+            <div class="shift-date-block">
+              <span class="month">${month}</span>
+              <span class="day">${day}</span>
+              <span class="dow">${dow}</span>
+            </div>
+            <div class="shift-meta">
+              <div class="shift-title">${escHtml(s.description || 'Untitled Shift')}</div>
+              <div class="shift-details">
+                ${s.time ? `<span>🕐 ${escHtml(s.time)}</span>` : ''}
+                ${s.location ? `<span>📍 ${escHtml(s.location)}</span>` : ''}
+              </div>
+              ${s.notes ? `<div style="margin-top:0.4rem;font-size:0.78rem;color:var(--muted);font-style:italic">${escHtml(s.notes)}</div>` : ''}
+            </div>
+            <span class="status-badge ${isCovered ? 'status-covered' : 'status-open'}">
+              ${isCovered ? '✓ Covered' : '⚡ Open'}
+            </span>
+          </div>
+          <div class="shift-body">
+            <div class="sitters-row">
+              <span class="sitters-label">Watching:</span>
+              ${chips || '<span class="no-sitters">No one signed up yet</span>'}
+            </div>
+            <div class="signup-row">
+              <input type="text" id="inp-${s.id}" placeholder="Your name" onkeydown="if(event.key==='Enter') signUp('${s.id}')">
+              <button class="btn btn-secondary" onclick="signUp('${s.id}')">Sign up 🙋</button>
+            </div>
+          </div>
+          <div class="card-footer">
+            <button class="btn btn-danger" onclick="openEdit('${s.id}')">✏️ Edit</button>
+            <button class="btn btn-danger" onclick="deleteShift('${s.id}')">🗑 Delete</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  // ── Actions ──────────────────────────────────────────
+  async function addShift() {
+    const date = document.getElementById('newDate').value;
+    const time = document.getElementById('newTime').value.trim();
+    const description = document.getElementById('newDesc').value.trim();
+    const location = document.getElementById('newLocation').value.trim();
+    const notes = document.getElementById('newNotes').value.trim();
+
+    if (!date && !description) { alert('Please fill in at least a date and description!'); return; }
+
+    const { error } = await db.from('shifts').insert([{
+      id: uid(), date, time, description, location, notes, sitters: []
+    }]);
+
+    if (error) { alert('Error saving — check your connection.'); console.error(error); return; }
+
+    ['newDate','newTime','newDesc','newLocation','newNotes'].forEach(id => {
+      document.getElementById(id).value = '';
+    });
+    // realtime will trigger reload
+  }
+
+  async function deleteShift(id) {
+    if (!confirm('Remove this shift?')) return;
+    await db.from('shifts').delete().eq('id', id);
+  }
+
+  async function signUp(id) {
+    const inp = document.getElementById('inp-' + id);
+    const name = inp.value.trim();
+    if (!name) { inp.focus(); return; }
+    const s = shifts.find(s => s.id === id);
+    if (!s) return;
+    const sitters = s.sitters || [];
+    if (sitters.includes(name)) { alert('Already signed up!'); return; }
+    const updated = [...sitters, name];
+    inp.value = '';
+    await db.from('shifts').update({ sitters: updated }).eq('id', id);
+  }
+
+  async function removeSitter(id, idx) {
+    const s = shifts.find(s => s.id === id);
+    if (!s) return;
+    const updated = [...(s.sitters || [])];
+    updated.splice(idx, 1);
+    await db.from('shifts').update({ sitters: updated }).eq('id', id);
+  }
+
+  function setFilter(f, btn) {
+    currentFilter = f;
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    render();
+  }
+
+  // ── Edit modal ───────────────────────────────────────
+  function openEdit(id) {
+    const s = shifts.find(s => s.id === id);
+    if (!s) return;
+    document.getElementById('editId').value = id;
+    document.getElementById('editDate').value = s.date || '';
+    document.getElementById('editTime').value = s.time || '';
+    document.getElementById('editDesc').value = s.description || '';
+    document.getElementById('editLocation').value = s.location || '';
+    document.getElementById('editNotes').value = s.notes || '';
+    document.getElementById('editModal').classList.add('open');
+  }
+
+  function closeModal() { document.getElementById('editModal').classList.remove('open'); }
+
+  async function saveEdit() {
+    const id = document.getElementById('editId').value;
+    const updates = {
+      date: document.getElementById('editDate').value,
+      time: document.getElementById('editTime').value.trim(),
+      description: document.getElementById('editDesc').value.trim(),
+      location: document.getElementById('editLocation').value.trim(),
+      notes: document.getElementById('editNotes').value.trim(),
+    };
+    await db.from('shifts').update(updates).eq('id', id);
+    closeModal();
+  }
+
+  document.getElementById('editModal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+
+  // ── Init ─────────────────────────────────────────────
+  loadShifts();
+</script>
+</body>
+</html>
